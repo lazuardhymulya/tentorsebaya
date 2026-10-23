@@ -1,8 +1,13 @@
-import Link from 'next/link';
-import { ArrowRight, MessageCircleQuestion, Radar, Sparkles } from 'lucide-react';
-import { Navbar } from '@/components/Navbar';
-import { Footer } from '@/components/Footer';
-import { ReviewSection } from '@/components/ReviewSection';
+import Link from "next/link";
+import {
+  ArrowRight,
+  MessageCircleQuestion,
+  Radar,
+  Sparkles,
+} from "lucide-react";
+import { Navbar } from "@/components/Navbar";
+import { Footer } from "@/components/Footer";
+import { ReviewSection } from "@/components/ReviewSection";
 
 export default function LandingPage() {
   return (
@@ -18,12 +23,13 @@ export default function LandingPage() {
                 <Sparkles size={14} /> Dicocokkan otomatis, bukan diketik manual
               </span>
               <h1 className="mt-5 text-4xl font-semibold leading-[1.1] tracking-tight text-ink-900 sm:text-5xl">
-                Nyangkut soal? Tanya, langsung nyambung ke tentor sebaya yang lagi online.
+                Tidak ada pertanyaan yang terlalu sederhana. Yuk, aktif bertanya
+                hari ini demi pemahaman yang lebih matang esok hari!
               </h1>
               <p className="mt-5 max-w-md text-lg text-ink-600">
-                Begitu pertanyaanmu terkirim, sistem langsung mencarikan pelajar
-                SMA lain yang paham mapel itu dan sedang online — tunggu sebentar,
-                langsung nyambung chat begitu ada yang menerima.
+                Pilots merupakan platform digital yang dikembangkan sebagai
+                sarana untuk mendukung interaksi, komunikasi, dan pertukaran
+                pengetahuan antarsiswa.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <Link href="/daftar/mentee" className="btn-primary">
@@ -53,33 +59,44 @@ export default function LandingPage() {
         {/* CARA KERJA */}
         <section id="cara-kerja" className="border-y border-ink-100 bg-white">
           <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-            <h2 className="text-3xl font-semibold text-ink-900">Cara kerjanya</h2>
+            <h2 className="text-3xl font-semibold text-ink-900">
+              Cara kerjanya
+            </h2>
             <div className="mt-8 grid gap-8 sm:grid-cols-3">
               <div>
                 <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
                   <MessageCircleQuestion size={22} />
                 </div>
-                <h3 className="font-display text-lg font-semibold text-ink-900">Tulis pertanyaanmu</h3>
+                <h3 className="font-display text-lg font-semibold text-ink-900">
+                  Tulis pertanyaanmu
+                </h3>
                 <p className="mt-1 text-ink-600">
-                  Pilih mapel, tulis soalnya, boleh lampirkan foto kalau lebih gampang difoto daripada diketik.
+                  Pilih mapel, tulis soalnya, lampirkan foto.
                 </p>
               </div>
               <div>
                 <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
                   <Radar size={22} />
                 </div>
-                <h3 className="font-display text-lg font-semibold text-ink-900">Sistem mencarikan tentor</h3>
+                <h3 className="font-display text-lg font-semibold text-ink-900">
+                  Sistem mencarikan tentor
+                </h3>
                 <p className="mt-1 text-ink-600">
-                  Otomatis ditawarkan ke tentor yang sesuai mapel dan sedang online — bukan asal siapa cepat dia dapat.
+                  Pertanyaan akan ditawarkan kepada tentor yang sesuai dengan
+                  mata pelajaran dan ketersediaannya, sehingga mentee dapat
+                  memperoleh bantuan dari tentor yang tepat.
                 </p>
               </div>
               <div>
                 <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
                   <Sparkles size={22} />
                 </div>
-                <h3 className="font-display text-lg font-semibold text-ink-900">Ngobrol sampai paham</h3>
+                <h3 className="font-display text-lg font-semibold text-ink-900">
+                  Ngobrol sampai paham
+                </h3>
                 <p className="mt-1 text-ink-600">
-                  Begitu ada yang menerima, chat langsung terbuka. Selesai belajar, kasih bintang buat tentornya.
+                  Begitu ada yang menerima, chat langsung terbuka. Selesai
+                  belajar, kasih bintang buat tentornya.
                 </p>
               </div>
             </div>
