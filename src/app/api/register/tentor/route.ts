@@ -3,9 +3,14 @@ import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { hashPassword, verifyPassword } from '@/lib/password';
+import { USERNAME_HINT, USERNAME_REGEX } from '@/lib/profile';
 
 const schema = z.object({
-  username: z.string().min(3, 'Username minimal 3 karakter').max(30),
+  username: z
+    .string()
+    .min(3, 'Username minimal 3 karakter')
+    .max(30, 'Username maksimal 30 karakter')
+    .regex(USERNAME_REGEX, USERNAME_HINT),
   password: z.string().min(6, 'Password minimal 6 karakter'),
   kelas: z.string().min(1).optional(),
   accessCode: z.string().optional(),
@@ -13,6 +18,17 @@ const schema = z.object({
 });
 
 export async function POST(request: Request) {
+  try {
+    return await handlePost(request);
+  } catch (err) {
+    return NextResponse.json(
+      { error: 'Terjadi kesalahan tak terduga: ' + (err instanceof Error ? err.message : String(err)) },
+      { status: 500 }
+    );
+  }
+}
+
+async function handlePost(request: Request) {
   const supabase = await createClient();
   const {
     data: { user },

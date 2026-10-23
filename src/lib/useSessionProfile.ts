@@ -32,7 +32,7 @@ export function useSessionProfile(): UseSessionProfileResult {
 
       const { data: p } = await supabase
         .from('profiles')
-        .select('id, role, username, full_name, avatar_url, created_at')
+        .select('id, role, username, full_name, avatar_url, photo_url, created_at')
         .eq('id', user.id)
         .maybeSingle();
 

@@ -6,6 +6,9 @@ import { Bell, GraduationCap, LogOut, Menu, Search, X } from 'lucide-react';
 import { useSessionProfile } from '@/lib/useSessionProfile';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import { APP_NAME } from '@/lib/brand';
+import { Avatar } from '@/components/Avatar';
+import { profileHref } from '@/components/UserLink';
 
 export function Navbar() {
   const { profile, loading } = useSessionProfile();
@@ -86,7 +89,7 @@ export function Navbar() {
             <GraduationCap size={20} />
           </span>
           <span className="hidden font-display text-lg font-semibold tracking-tight text-ink-900 sm:inline">
-            TentorSebaya
+            {APP_NAME}
           </span>
         </Link>
 
@@ -158,12 +161,18 @@ export function Navbar() {
 
           {!loading && profile && (
             <div className="hidden items-center gap-3 pl-1 md:flex">
-              <div className="text-right text-sm leading-tight">
-                <p className="font-medium text-ink-900">{profile.username}</p>
-                {profile.tentor && (
-                  <p className="text-xs text-ink-400">★ {profile.tentor.rating.toFixed(1)}</p>
-                )}
-              </div>
+              <Link
+                href={profileHref(profile.username)}
+                className="flex items-center gap-2 rounded-full py-1 pl-1 pr-3 hover:bg-ink-100"
+              >
+                <Avatar username={profile.username} photoUrl={profile.photo_url} size="sm" />
+                <span className="text-left text-sm leading-tight">
+                  <span className="block font-medium text-ink-900">{profile.username}</span>
+                  {profile.tentor && (
+                    <span className="block text-xs text-ink-400">★ {profile.tentor.rating.toFixed(1)}</span>
+                  )}
+                </span>
+              </Link>
               <button
                 onClick={handleLogout}
                 className="rounded-full p-2 text-ink-400 hover:bg-ink-100 hover:text-ink-700"
@@ -178,7 +187,14 @@ export function Navbar() {
 
       {menuOpen && profile && (
         <div className="border-t border-ink-100 bg-white px-4 py-3 md:hidden">
-          <p className="mb-2 text-sm font-medium text-ink-900">{profile.username}</p>
+          <Link
+            href={profileHref(profile.username)}
+            onClick={() => setMenuOpen(false)}
+            className="mb-2 flex items-center gap-2 text-sm font-medium text-ink-900"
+          >
+            <Avatar username={profile.username} photoUrl={profile.photo_url} size="sm" />
+            {profile.username}
+          </Link>
           {profile.role === 'mentee' && (
             <Link href="/pertanyaan/ajukan" className="btn-primary mb-2 w-full">
               Ajukan Pertanyaan

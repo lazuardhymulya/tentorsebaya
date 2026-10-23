@@ -3,6 +3,17 @@ import { getSessionProfile } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function POST(request: Request) {
+  try {
+    return await handlePost(request);
+  } catch (err) {
+    return NextResponse.json(
+      { error: 'Terjadi kesalahan tak terduga: ' + (err instanceof Error ? err.message : String(err)) },
+      { status: 500 }
+    );
+  }
+}
+
+async function handlePost(request: Request) {
   const session = await getSessionProfile();
   if (!session) {
     return NextResponse.json({ error: 'Login dulu.' }, { status: 401 });

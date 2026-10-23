@@ -10,6 +10,17 @@ import { RESEND_INTERVAL_MS, QUESTION_EXPIRY_MS, SESSION_AUTO_CLOSE_MS } from '@
  * jarang untuk kebutuhan rotasi per jam di sini.
  */
 export async function GET(request: Request) {
+  try {
+    return await handleGet(request);
+  } catch (err) {
+    return NextResponse.json(
+      { error: 'Terjadi kesalahan tak terduga: ' + (err instanceof Error ? err.message : String(err)) },
+      { status: 500 }
+    );
+  }
+}
+
+async function handleGet(request: Request) {
   const authHeader = request.headers.get('authorization');
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

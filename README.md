@@ -1,4 +1,4 @@
-# TentorSebaya
+# Pilots
 
 Platform tanya-jawab pelajar SMA: mentee mengajukan pertanyaan, sistem otomatis
 mencocokkan ke tentor sesama pelajar yang sedang online (mirip mekanisme
@@ -27,7 +27,7 @@ Semua bagian di bawah punya tier gratis yang cukup untuk pemakaian ±1 bulan.
 4. Ulangi persis sama untuk `supabase/migrations/0002_storage.sql`.
 5. Ulangi persis sama untuk `supabase/migrations/0003_cron_extensions.sql`.
 
-   Urutannya harus 0001 → 0002 → 0003 karena saling bergantung.
+   Urutannya harus 0001 → 0002 → 0003 karena saling bergantung. Setelah itu jalankan juga `0004_realtime.sql` (update otomatis tanpa refresh) dan `0005_profil_ulasan.sql` (profil, ulasan teks, judul pertanyaan, foto profil) dengan cara yang sama.
 
 6. Ambil kredensial API: buka **Project Settings** (ikon gear) → **API**.
    Kamu akan butuh 3 nilai ini nanti:
@@ -40,7 +40,7 @@ Semua bagian di bawah punya tier gratis yang cukup untuk pemakaian ±1 bulan.
 ## 2. Buat Google OAuth Client ID (buat tombol "Lanjut dengan Google")
 
 1. Buka [Google Cloud Console](https://console.cloud.google.com) → buat project baru (nama bebas).
-2. Menu **APIs & Services** → **OAuth consent screen** → pilih **External** → isi nama app "TentorSebaya" & email kamu → simpan (status Testing juga tidak masalah untuk skala sekolah).
+2. Menu **APIs & Services** → **OAuth consent screen** → pilih **External** → isi nama app "Pilots" & email kamu → simpan (status Testing juga tidak masalah untuk skala sekolah).
 3. Menu **APIs & Services** → **Credentials** → **Create Credentials** → **OAuth client ID** → tipe **Web application**.
 4. Di bagian **Authorized redirect URIs**, tambahkan URL callback Supabase kamu (bentuknya seperti ini, ambil dari Supabase: **Authentication** → **Providers** → **Google**, di sana Supabase sudah menyediakan URL redirect yang harus dicopy ke sini):
    ```
@@ -48,6 +48,7 @@ Semua bagian di bawah punya tier gratis yang cukup untuk pemakaian ±1 bulan.
    ```
 5. Klik **Create**. Copy **Client ID** dan **Client Secret** yang muncul.
 6. Balik ke Supabase: **Authentication** → **Providers** → **Google** → aktifkan (toggle ON) → paste Client ID & Client Secret tadi → **Save**.
+7. **Penting kalau penggunanya bakal lebih dari ~100 orang**: selama status consent screen masih "Testing", Google membatasi maksimal 100 orang total yang bisa login selamanya. Begitu siap dipakai banyak orang, buka lagi halaman OAuth consent screen / Google Auth Platform → cari **Publishing status** → klik **Publish App**. Karena aplikasi ini cuma minta data dasar (nama & email, bukan data sensitif), publish ini tidak perlu menunggu proses review Google — langsung aktif dan batas 100 orang hilang.
 
 ---
 
@@ -182,6 +183,12 @@ menghapusnya: `select cron.unschedule('tentorsebaya-retry-questions');`.
   kebutuhan rotasi per jam & kedaluwarsa 24 jam ini sudah cukup presisi.
 - Video call / kirim video **belum ada** di versi ini (sesuai kesepakatan —
   fitur foto & voice note dulu, video menyusul kalau dibutuhkan nanti).
+
+---
+
+## Foto di bawah footer
+
+Taruh foto bernama persis `foto-footer.jpg` di folder `public`. Kalau file itu belum ada, bagian foto otomatis tidak tampil. Foto dipotong (bukan dilebarkan) mengikuti ukuran layar; titik fokusnya bisa digeser lewat `FOOTER_PHOTO_FOCUS` di `src/components/FooterPhoto.tsx`.
 
 ---
 

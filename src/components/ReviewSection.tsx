@@ -43,9 +43,9 @@ export function ReviewSection() {
 
   return (
     <section id="ulasan" className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-      <h2 className="text-3xl font-semibold text-ink-900">Kata mereka soal TentorSebaya</h2>
+      <h2 className="text-3xl font-semibold text-ink-900">Kata mereka soal Pilots</h2>
       <p className="mt-2 max-w-xl text-ink-600">
-        Ulasan asli dari pelajar yang sudah pakai TentorSebaya — bukan testimoni karangan.
+        Ulasan asli dari pelajar yang sudah pakai Pilots — bukan testimoni karangan.
       </p>
 
       {profile && (
@@ -53,7 +53,7 @@ export function ReviewSection() {
           <input
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Ceritain pengalaman kamu pakai TentorSebaya…"
+            placeholder="Ceritain pengalaman kamu pakai Pilots…"
             className="input-field"
             maxLength={500}
           />

@@ -1,12 +1,15 @@
 import Link from 'next/link';
+import { APP_NAME } from '@/lib/brand';
+import { FooterPhoto } from './FooterPhoto';
 
 export function Footer() {
   return (
+    <>
     <footer className="border-t border-ink-100 bg-white">
       <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="font-display text-lg font-semibold text-ink-900">TentorSebaya</p>
+            <p className="font-display text-lg font-semibold text-ink-900">{APP_NAME}</p>
             <p className="mt-1 max-w-xs text-sm text-ink-600">
               Tempat pelajar SMA saling bantu jawab soal — tanya sekarang, dijawab
               sesama pelajar yang lagi online.
@@ -30,9 +33,11 @@ export function Footer() {
           </div>
         </div>
         <p className="mt-8 text-xs text-ink-400">
-          © {new Date().getFullYear()} TentorSebaya. Dibuat oleh & untuk pelajar.
+          © {new Date().getFullYear()} {APP_NAME}. Dibuat oleh & untuk pelajar.
         </p>
       </div>
     </footer>
+    <FooterPhoto />
+    </>
   );
 }

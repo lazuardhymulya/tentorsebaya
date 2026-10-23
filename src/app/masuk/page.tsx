@@ -21,9 +21,30 @@ function MasukContent() {
   const step = searchParams.get('step');
   const redirect = searchParams.get('redirect');
   const errorParam = searchParams.get('error');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   if (step === 'konfirmasi') {
     return <KonfirmasiForm redirect={redirect} />;
+  }
+
+  async function handleGoogleClick() {
+    setError(null);
+    setLoading(true);
+    try {
+      const supabase = createClient();
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: `${window.location.origin}/auth/callback` },
+      });
+      if (oauthError) {
+        setError(oauthError.message);
+        setLoading(false);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Gagal memulai login Google.');
+      setLoading(false);
+    }
   }
 
   return (
@@ -33,7 +54,7 @@ function MasukContent() {
         <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
           <LogIn size={26} />
         </div>
-        <h1 className="text-3xl font-semibold text-ink-900">Masuk ke TentorSebaya</h1>
+        <h1 className="text-3xl font-semibold text-ink-900">Masuk ke Pilots</h1>
         <p className="mt-2 text-ink-600">Pakai akun Google yang sama waktu kamu daftar dulu.</p>
 
         {errorParam && (
@@ -41,18 +62,16 @@ function MasukContent() {
             Gagal masuk, coba lagi ya.
           </p>
         )}
+        {error && (
+          <p className="mt-4 rounded-2xl bg-red-50 px-4 py-3 text-left text-sm text-red-600">{error}</p>
+        )}
 
         <button
-          onClick={async () => {
-            const supabase = createClient();
-            await supabase.auth.signInWithOAuth({
-              provider: 'google',
-              options: { redirectTo: `${window.location.origin}/auth/callback` },
-            });
-          }}
+          onClick={handleGoogleClick}
+          disabled={loading}
           className="btn-primary mt-8 w-full"
         >
-          Lanjut dengan Google
+          {loading ? 'Membuka Google…' : 'Lanjut dengan Google'}
         </button>
         <p className="mt-4 text-sm text-ink-500">
           Belum punya akun? <a href="/daftar" className="font-medium text-brand-600 hover:underline">Daftar di sini</a>

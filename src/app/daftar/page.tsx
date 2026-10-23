@@ -17,7 +17,7 @@ export default async function DaftarPage({
       <main className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
         {belumTerdaftar && (
           <div className="mb-6 rounded-2xl border border-accent-300 bg-accent-50 px-4 py-3 text-sm text-accent-700">
-            Akun Google itu belum terdaftar di TentorSebaya. Pilih mau daftar sebagai apa dulu ya.
+            Akun Google itu belum terdaftar di Pilots. Pilih mau daftar sebagai apa dulu ya.
           </div>
         )}
 

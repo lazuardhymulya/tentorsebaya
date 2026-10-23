@@ -12,6 +12,8 @@ export default function AjukanPertanyaanPage() {
   const router = useRouter();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [subjectId, setSubjectId] = useState('');
+  const [title, setTitle] = useState('');
+  const [tags, setTags] = useState('');
   const [content, setContent] = useState('');
   const [photo, setPhoto] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -30,11 +32,14 @@ export default function AjukanPertanyaanPage() {
   async function submit() {
     setError(null);
     if (!subjectId) return setError('Pilih mapel dulu.');
+    if (title.trim().length < 5) return setError('Judul pertanyaan minimal 5 karakter.');
     if (content.trim().length < 5) return setError('Tulis pertanyaannya lebih detail ya.');
 
     setSubmitting(true);
     const formData = new FormData();
     formData.set('subjectId', subjectId);
+    formData.set('title', title.trim());
+    formData.set('tags', tags);
     formData.set('content', content.trim());
     if (photo) formData.set('photo', photo);
 
@@ -87,6 +92,27 @@ export default function AjukanPertanyaanPage() {
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}
             </select>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-ink-700">Judul pertanyaan</label>
+            <input
+              className="input-field"
+              value={title}
+              maxLength={120}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Ringkas, misalnya: Cara menghitung waktu mencapai titik tertinggi"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-ink-700">Topik (opsional)</label>
+            <input
+              className="input-field"
+              value={tags}
+              onChange={(e) => setTags(e.target.value)}
+              placeholder="Pisahkan dengan koma, maksimal 3. Contoh: gerak parabola, kinematika"
+            />
           </div>
 
           <div>

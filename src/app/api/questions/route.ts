@@ -2,8 +2,20 @@ import { NextResponse } from 'next/server';
 import { getSessionProfile } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fillBroadcastSlots } from '@/lib/broadcast';
+import { parseTags } from '@/lib/profile';
 
 export async function POST(request: Request) {
+  try {
+    return await handlePost(request);
+  } catch (err) {
+    return NextResponse.json(
+      { error: 'Terjadi kesalahan tak terduga: ' + (err instanceof Error ? err.message : String(err)) },
+      { status: 500 }
+    );
+  }
+}
+
+async function handlePost(request: Request) {
   const session = await getSessionProfile();
   if (!session || session.profile.role !== 'mentee') {
     return NextResponse.json({ error: 'Hanya mentee yang bisa mengajukan pertanyaan.' }, { status: 403 });
@@ -12,11 +24,17 @@ export async function POST(request: Request) {
   const formData = await request.formData();
   const subjectId = formData.get('subjectId');
   const content = formData.get('content');
+  const title = formData.get('title');
+  const tagsRaw = formData.get('tags');
   const photo = formData.get('photo') as File | null;
 
   if (typeof subjectId !== 'string' || typeof content !== 'string' || content.trim().length < 5) {
     return NextResponse.json({ error: 'Mapel dan isi pertanyaan wajib diisi.' }, { status: 400 });
   }
+  if (typeof title !== 'string' || title.trim().length < 5 || title.trim().length > 120) {
+    return NextResponse.json({ error: 'Judul pertanyaan wajib diisi (5 sampai 120 karakter).' }, { status: 400 });
+  }
+  const tags = typeof tagsRaw === 'string' ? parseTags(tagsRaw, 3) : [];
 
   const admin = createAdminClient();
 
@@ -55,6 +73,8 @@ export async function POST(request: Request) {
     .insert({
       mentee_id: session.profile.id,
       subject_id: subjectId,
+      title: title.trim(),
+      tags,
       content: content.trim(),
       photo_url: photoUrl,
     })

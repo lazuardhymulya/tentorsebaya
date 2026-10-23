@@ -10,6 +10,17 @@ const schema = z.object({
 });
 
 export async function POST(request: Request) {
+  try {
+    return await handlePost(request);
+  } catch (err) {
+    return NextResponse.json(
+      { error: 'Terjadi kesalahan tak terduga: ' + (err instanceof Error ? err.message : String(err)) },
+      { status: 500 }
+    );
+  }
+}
+
+async function handlePost(request: Request) {
   const supabase = await createClient();
   const {
     data: { user },

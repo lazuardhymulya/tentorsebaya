@@ -6,10 +6,12 @@ import { ArrowLeft, Camera, Mic, Send, Square, Star } from 'lucide-react';
 import Link from 'next/link';
 import { useSessionProfile } from '@/lib/useSessionProfile';
 import { createClient } from '@/lib/supabase/client';
+import { UserLink } from '@/components/UserLink';
 import type { MessageRow } from '@/lib/types';
 
 interface QuestionDetail {
   id: string;
+  title: string | null;
   content: string;
   photo_url: string | null;
   status: string;
@@ -33,6 +35,9 @@ export default function ChatPage() {
   const [recording, setRecording] = useState(false);
   const [ratingOpen, setRatingOpen] = useState(false);
   const [ratingValue, setRatingValue] = useState(5);
+  const [reviewText, setReviewText] = useState('');
+  const [ratingError, setRatingError] = useState<string | null>(null);
+  const [ratingSubmitting, setRatingSubmitting] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -52,7 +57,7 @@ export default function ChatPage() {
 
     supabase
       .from('questions')
-      .select('id, content, photo_url, status, rating_given, mentee_id, accepted_tentor_id, subjects(name)')
+      .select('id, title, content, photo_url, status, rating_given, mentee_id, accepted_tentor_id, subjects(name)')
       .eq('id', questionId)
       .maybeSingle()
       .then(({ data }) => setQuestion(data as unknown as QuestionDetail));
@@ -138,15 +143,21 @@ export default function ChatPage() {
   }
 
   async function submitRating() {
+    setRatingError(null);
+    setRatingSubmitting(true);
     const res = await fetch(`/api/sessions/${questionId}/end`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ rating: ratingValue }),
+      body: JSON.stringify({ rating: ratingValue, review: reviewText.trim() || undefined }),
     });
+    setRatingSubmitting(false);
     if (res.ok) {
       setRatingOpen(false);
       router.push('/dashboard');
+      return;
     }
+    const body = await res.json().catch(() => ({}));
+    setRatingError(body.error ?? 'Gagal mengakhiri sesi. Coba lagi.');
   }
 
   if (!question || !profile) {
@@ -164,7 +175,11 @@ export default function ChatPage() {
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <p className="font-medium text-ink-900">{partnerName}</p>
+            {partnerName && partnerName !== '—' ? (
+              <UserLink username={partnerName} withAt={false} />
+            ) : (
+              <p className="font-medium text-ink-900">{partnerName}</p>
+            )}
             <p className="text-xs text-ink-500">{question.subjects?.name}</p>
           </div>
         </div>
@@ -184,6 +199,7 @@ export default function ChatPage() {
         <div className="mx-auto max-w-2xl space-y-3">
           <div className="card border-brand-100 bg-brand-50/40">
             <p className="text-sm font-medium text-brand-700">Pertanyaan awal</p>
+            {question.title && <p className="mt-1 font-semibold text-ink-900">{question.title}</p>}
             <p className="mt-1 text-ink-800">{question.content}</p>
             {question.photo_url && (
               <img src={question.photo_url} alt="Foto soal" className="mt-2 max-h-64 rounded-2xl object-cover" />
@@ -260,7 +276,7 @@ export default function ChatPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-sm rounded-3xl bg-white p-6">
             <h2 className="text-lg font-semibold text-ink-900">Kasih bintang buat {partnerName}</h2>
-            <p className="mt-1 text-sm text-ink-600">Wajib diisi sebelum sesi ditutup.</p>
+            <p className="mt-1 text-sm text-ink-600">Bintang wajib diisi. Ulasan boleh dikosongkan.</p>
             <div className="mt-4 flex justify-center gap-1">
               {[1, 2, 3, 4, 5].map((n) => (
                 <button key={n} onClick={() => setRatingValue(n)} aria-label={`${n} bintang`}>
@@ -271,9 +287,19 @@ export default function ChatPage() {
                 </button>
               ))}
             </div>
-            <div className="mt-6 flex gap-2">
+            <textarea
+              className="input-field mt-4 min-h-24 text-sm"
+              value={reviewText}
+              maxLength={500}
+              onChange={(e) => setReviewText(e.target.value)}
+              placeholder="Tulis ulasan untuk tentor (opsional). Ulasan tampil di profilnya."
+            />
+            {ratingError && <p className="mt-2 text-sm text-red-600">{ratingError}</p>}
+            <div className="mt-4 flex gap-2">
               <button onClick={() => setRatingOpen(false)} className="btn-secondary flex-1">Batal</button>
-              <button onClick={submitRating} className="btn-primary flex-1">Kirim & Akhiri</button>
+              <button onClick={submitRating} disabled={ratingSubmitting} className="btn-primary flex-1">
+                {ratingSubmitting ? 'Mengirim…' : 'Kirim & Akhiri'}
+              </button>
             </div>
           </div>
         </div>

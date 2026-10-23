@@ -2,7 +2,18 @@ import { NextResponse } from 'next/server';
 import { getSessionProfile } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase/admin';
 
-export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(request: Request, ctx: { params: Promise<{ id: string }> }) {
+  try {
+    return await handlePost(ctx);
+  } catch (err) {
+    return NextResponse.json(
+      { error: 'Terjadi kesalahan tak terduga: ' + (err instanceof Error ? err.message : String(err)) },
+      { status: 500 }
+    );
+  }
+}
+
+async function handlePost({ params }: { params: Promise<{ id: string }> }) {
   const { id: questionId } = await params;
   const session = await getSessionProfile();
   if (!session || session.profile.role !== 'tentor') {

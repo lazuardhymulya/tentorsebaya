@@ -6,6 +6,17 @@ import { createAdminClient } from '@/lib/supabase/admin';
 const schema = z.object({ isAvailable: z.boolean() });
 
 export async function POST(request: Request) {
+  try {
+    return await handlePost(request);
+  } catch (err) {
+    return NextResponse.json(
+      { error: 'Terjadi kesalahan tak terduga: ' + (err instanceof Error ? err.message : String(err)) },
+      { status: 500 }
+    );
+  }
+}
+
+async function handlePost(request: Request) {
   const session = await getSessionProfile();
   if (!session || session.profile.role !== 'tentor') {
     return NextResponse.json({ error: 'Hanya tentor yang punya status tersedia.' }, { status: 403 });

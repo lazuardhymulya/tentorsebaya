@@ -14,6 +14,7 @@ interface AssignmentItem {
   sent_at: string;
   questions: {
     id: string;
+    title: string | null;
     content: string;
     photo_url: string | null;
     subjects: { name: string } | null;
@@ -22,6 +23,7 @@ interface AssignmentItem {
 
 interface MenteeQuestionItem {
   id: string;
+  title: string | null;
   content: string;
   status: string;
   created_at: string;
@@ -59,7 +61,7 @@ export default function NotifikasiPage() {
     const supabase = createClient();
     const { data } = await supabase
       .from('question_assignments')
-      .select('id, question_id, sent_at, questions(id, content, photo_url, subjects(name))')
+      .select('id, question_id, sent_at, questions(id, title, content, photo_url, subjects(name))')
       .eq('tentor_id', tentorId)
       .eq('status', 'menunggu')
       .order('sent_at', { ascending: false });
@@ -70,7 +72,7 @@ export default function NotifikasiPage() {
     const supabase = createClient();
     const { data } = await supabase
       .from('questions')
-      .select('id, content, status, created_at, subjects(name)')
+      .select('id, title, content, status, created_at, subjects(name)')
       .eq('mentee_id', menteeId)
       .order('created_at', { ascending: false })
       .limit(15);
@@ -165,7 +167,8 @@ export default function NotifikasiPage() {
                     {new Date(a.sent_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
-                <p className="mt-3 text-ink-800">{a.questions?.content}</p>
+                {a.questions?.title && <p className="mt-3 font-semibold text-ink-900">{a.questions.title}</p>}
+                <p className={`${a.questions?.title ? 'mt-1' : 'mt-3'} text-ink-800`}>{a.questions?.content}</p>
                 {a.questions?.photo_url && (
                   <a
                     href={a.questions.photo_url}
@@ -210,7 +213,7 @@ export default function NotifikasiPage() {
                     </span>
                     <span className={`rounded-full px-3 py-1 text-xs font-medium ${status.className}`}>{status.label}</span>
                   </div>
-                  <p className="mt-2 line-clamp-2 text-ink-800">{q.content}</p>
+                  <p className="mt-2 line-clamp-2 text-ink-800">{q.title || q.content}</p>
                   <p className="mt-2 text-sm text-ink-500">{status.note}</p>
                 </div>
               );

@@ -10,6 +10,9 @@ export interface Profile {
   username: string;
   full_name: string | null;
   avatar_url: string | null;
+  bio?: string | null;
+  photo_url?: string | null;
+  privacy?: 'publik' | 'terbatas' | 'tidak_dapat_dicari';
   created_at: string;
 }
 
@@ -43,6 +46,8 @@ export interface QuestionRow {
   id: string;
   mentee_id: string;
   subject_id: string;
+  title: string | null;
+  tags: string[];
   content: string;
   photo_url: string | null;
   status: QuestionStatus;

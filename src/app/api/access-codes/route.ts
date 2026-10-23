@@ -4,6 +4,17 @@ import { isAdminLoggedIn } from '@/lib/admin-session';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function GET() {
+  try {
+    return await handleGet();
+  } catch (err) {
+    return NextResponse.json(
+      { error: 'Terjadi kesalahan tak terduga: ' + (err instanceof Error ? err.message : String(err)) },
+      { status: 500 }
+    );
+  }
+}
+
+async function handleGet() {
   if (!(await isAdminLoggedIn())) {
     return NextResponse.json({ error: 'Tidak diizinkan' }, { status: 403 });
   }
@@ -28,6 +39,17 @@ function generateCode(): string {
 }
 
 export async function POST(request: Request) {
+  try {
+    return await handlePost(request);
+  } catch (err) {
+    return NextResponse.json(
+      { error: 'Terjadi kesalahan tak terduga: ' + (err instanceof Error ? err.message : String(err)) },
+      { status: 500 }
+    );
+  }
+}
+
+async function handlePost(request: Request) {
   if (!(await isAdminLoggedIn())) {
     return NextResponse.json({ error: 'Tidak diizinkan' }, { status: 403 });
   }

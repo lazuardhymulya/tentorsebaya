@@ -19,9 +19,30 @@ export default function DaftarTentorPage() {
 function DaftarTentorContent() {
   const searchParams = useSearchParams();
   const step = searchParams.get('step');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   if (step === 'lengkapi') {
     return <LengkapiForm />;
+  }
+
+  async function handleGoogleClick() {
+    setError(null);
+    setLoading(true);
+    try {
+      const supabase = createClient();
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: `${window.location.origin}/auth/callback?role=tentor` },
+      });
+      if (oauthError) {
+        setError(oauthError.message);
+        setLoading(false);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Gagal memulai login Google.');
+      setLoading(false);
+    }
   }
 
   return (
@@ -35,17 +56,15 @@ function DaftarTentorContent() {
         <p className="mt-2 text-ink-600">
           Siapkan kode akses dari admin sekolah dulu ya — dibutuhkan sekali di langkah berikutnya.
         </p>
+        {error && (
+          <p className="mt-4 rounded-2xl bg-red-50 px-4 py-3 text-left text-sm text-red-600">{error}</p>
+        )}
         <button
-          onClick={async () => {
-            const supabase = createClient();
-            await supabase.auth.signInWithOAuth({
-              provider: 'google',
-              options: { redirectTo: `${window.location.origin}/auth/callback?role=tentor` },
-            });
-          }}
+          onClick={handleGoogleClick}
+          disabled={loading}
           className="btn-primary mt-8 w-full"
         >
-          Lanjut dengan Google
+          {loading ? 'Membuka Google…' : 'Lanjut dengan Google'}
         </button>
         <p className="mt-4 text-sm text-ink-500">
           Sudah pernah daftar? <a href="/masuk" className="font-medium text-brand-600 hover:underline">Masuk di sini</a>

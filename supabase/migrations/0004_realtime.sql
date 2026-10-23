@@ -3,6 +3,7 @@
 -- tanpa refresh: questions (status pertanyaan), question_assignments
 -- (tawaran ke tentor), messages (chat). Tanpa ini, kode langganan
 -- postgres_changes di sisi aplikasi tidak pernah menerima sinyal apapun.
+-- (Kalau sudah pernah dijalankan, lewati file ini.)
 -- =========================================================================
 
 alter publication supabase_realtime add table public.questions;
