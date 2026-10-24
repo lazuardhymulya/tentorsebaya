@@ -4,6 +4,7 @@ import { Pencil, Star } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { Avatar } from '@/components/Avatar';
+import { ProfileTabs } from '@/components/ProfileTabs';
 import { UserLink } from '@/components/UserLink';
 import { getSessionProfile } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -220,43 +221,54 @@ export default async function ProfilPage({ params }: { params: { username: strin
               </>
             )}
 
-            {/* Riwayat sesi yang dipublikasikan: diisi pada Tahap 2 */}
-            <section className="card mt-4">
-              <h2 className="text-lg font-semibold text-ink-900">
-                {isTentor ? 'Riwayat jawaban' : 'Riwayat pertanyaan'}
-              </h2>
-              <p className="mt-2 text-ink-400">Belum ada sesi yang dipublikasikan.</p>
-            </section>
-
-            {/* Ulasan untuk tentor */}
-            {isTentor && (
+            {isTentor ? (
+              <ProfileTabs
+                reviewCount={reviews.length}
+                history={
+                  <>
+                    <h2 className="text-lg font-semibold text-ink-900">Riwayat jawaban</h2>
+                    <p className="mt-2 text-ink-400">Belum ada sesi yang dipublikasikan.</p>
+                  </>
+                }
+                reviews={
+                  <>
+                    <h2 className="text-lg font-semibold text-ink-900">Ulasan dari mentee</h2>
+                    {reviews.length === 0 ? (
+                      <p className="mt-2 text-ink-400">Belum ada ulasan.</p>
+                    ) : (
+                      <ul className="mt-3 divide-y divide-ink-100">
+                        {reviews.map((r) => (
+                          <li key={r.id} className="py-4 first:pt-0 last:pb-0">
+                            <div className="flex items-center justify-between gap-3">
+                              {r.mentee ? (
+                                <UserLink username={r.mentee.username} />
+                              ) : (
+                                <span className="text-ink-500">Pengguna</span>
+                              )}
+                              <span className="flex items-center gap-1 text-sm font-medium text-accent-600">
+                                <Star size={14} className="fill-accent-500 text-accent-500" />
+                                {Number(r.rating).toFixed(1)}
+                              </span>
+                            </div>
+                            <p className="mt-1 whitespace-pre-wrap text-ink-700">{r.review_text}</p>
+                            <p className="mt-1 text-xs text-ink-400">
+                              {new Date(r.created_at).toLocaleDateString('id-ID', {
+                                day: 'numeric',
+                                month: 'long',
+                                year: 'numeric',
+                              })}
+                            </p>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </>
+                }
+              />
+            ) : (
               <section className="card mt-4">
-                <h2 className="text-lg font-semibold text-ink-900">Ulasan dari mentee</h2>
-                {reviews.length === 0 ? (
-                  <p className="mt-2 text-ink-400">Belum ada ulasan.</p>
-                ) : (
-                  <ul className="mt-3 divide-y divide-ink-100">
-                    {reviews.map((r) => (
-                      <li key={r.id} className="py-4 first:pt-0 last:pb-0">
-                        <div className="flex items-center justify-between gap-3">
-                          {r.mentee ? <UserLink username={r.mentee.username} /> : <span className="text-ink-500">Pengguna</span>}
-                          <span className="flex items-center gap-1 text-sm font-medium text-accent-600">
-                            <Star size={14} className="fill-accent-500 text-accent-500" />
-                            {Number(r.rating).toFixed(1)}
-                          </span>
-                        </div>
-                        <p className="mt-1 whitespace-pre-wrap text-ink-700">{r.review_text}</p>
-                        <p className="mt-1 text-xs text-ink-400">
-                          {new Date(r.created_at).toLocaleDateString('id-ID', {
-                            day: 'numeric',
-                            month: 'long',
-                            year: 'numeric',
-                          })}
-                        </p>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                <h2 className="text-lg font-semibold text-ink-900">Riwayat pertanyaan</h2>
+                <p className="mt-2 text-ink-400">Belum ada sesi yang dipublikasikan.</p>
               </section>
             )}
           </>

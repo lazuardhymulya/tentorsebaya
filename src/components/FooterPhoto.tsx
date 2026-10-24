@@ -31,7 +31,11 @@ export function FooterPhoto() {
   if (status === 'error') return null;
 
   return (
-    <div className={status === 'ok' ? 'w-full overflow-hidden bg-ink-100' : 'hidden'}>
+    <div
+      // absolute + top-full: foto menempel tepat di bawah dasar halaman, di luar tinggi layar,
+      // jadi baru terlihat kalau pengunjung menggeser ke bawah (footer tetap mentok di dasar layar)
+      className={status === 'ok' ? 'absolute inset-x-0 top-full overflow-hidden bg-ink-100' : 'hidden'}
+    >
       <img
         ref={imgRef}
         src={FOOTER_PHOTO_SRC}

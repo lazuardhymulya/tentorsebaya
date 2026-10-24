@@ -28,6 +28,7 @@ interface MenteeQuestionItem {
   status: string;
   created_at: string;
   subjects: { name: string } | null;
+  tentor: { username: string } | null;
 }
 
 const MENTEE_STATUS: Record<string, { label: string; note: string; className: string }> = {
@@ -72,7 +73,7 @@ export default function NotifikasiPage() {
     const supabase = createClient();
     const { data } = await supabase
       .from('questions')
-      .select('id, title, content, status, created_at, subjects(name)')
+      .select('id, title, content, status, created_at, subjects(name), tentor:profiles!accepted_tentor_id(username)')
       .eq('mentee_id', menteeId)
       .order('created_at', { ascending: false })
       .limit(15);
@@ -214,7 +215,9 @@ export default function NotifikasiPage() {
                     <span className={`rounded-full px-3 py-1 text-xs font-medium ${status.className}`}>{status.label}</span>
                   </div>
                   <p className="mt-2 line-clamp-2 text-ink-800">{q.title || q.content}</p>
-                  <p className="mt-2 text-sm text-ink-500">{status.note}</p>
+                  <p className="mt-2 text-sm text-ink-500">
+                    {q.status === 'berjalan' && q.tentor ? `Diterima oleh @${q.tentor.username}. Lanjut ke ruang chat.` : status.note}
+                  </p>
                 </div>
               );
               return q.status === 'berjalan' || q.status === 'selesai' ? (

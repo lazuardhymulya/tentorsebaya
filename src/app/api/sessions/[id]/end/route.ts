@@ -36,19 +36,29 @@ async function handlePost(request: Request, { params }: { params: Promise<{ id: 
   }
 
   const admin = createAdminClient();
-  const { data, error } = await admin
-    .from('questions')
-    .update({
-      status: 'selesai',
-      ended_at: new Date().toISOString(),
-      rating_given: parsed.data.rating,
-      auto_closed: false,
-    })
-    .eq('id', questionId)
-    .eq('mentee_id', session.profile.id)
-    .eq('status', 'berjalan')
-    .select()
-    .maybeSingle();
+  const baseUpdate = {
+    status: 'selesai',
+    ended_at: new Date().toISOString(),
+    rating_given: parsed.data.rating,
+    auto_closed: false,
+  };
+  const endSession = (values: Record<string, unknown>) =>
+    admin
+      .from('questions')
+      .update(values)
+      .eq('id', questionId)
+      .eq('mentee_id', session.profile.id)
+      .eq('status', 'berjalan')
+      .select()
+      .maybeSingle();
+
+  // gift_pending = penanda kado untuk tentor (migrasi 0006). Kalau migrasinya belum
+  // dijalankan, sesi tetap harus bisa diakhiri, jadi coba lagi tanpa kolom itu.
+  let result = await endSession({ ...baseUpdate, gift_pending: true });
+  if (result.error && /gift_pending/i.test(result.error.message)) {
+    result = await endSession(baseUpdate);
+  }
+  const { data, error } = result;
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!data) {

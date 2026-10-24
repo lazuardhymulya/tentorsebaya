@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Camera, Mic, Send, Square, Star } from 'lucide-react';
+import { ArrowLeft, Camera, Hourglass, Mic, PartyPopper, Send, Square, Star } from 'lucide-react';
 import Link from 'next/link';
 import { useSessionProfile } from '@/lib/useSessionProfile';
 import { createClient } from '@/lib/supabase/client';
@@ -19,6 +19,24 @@ interface QuestionDetail {
   mentee_id: string;
   accepted_tentor_id: string | null;
   subjects: { name: string } | null;
+}
+
+interface WaitInfo {
+  status: string;
+  offeredCount: number;
+  pendingCount: number;
+  declinedCount: number;
+  expiresAt: string | null;
+  tentorUsername: string | null;
+}
+
+function waitMessage(info: WaitInfo | null): string {
+  if (!info) return 'Memeriksa status pertanyaanmu…';
+  if (info.offeredCount === 0) {
+    return 'Belum ada tentor yang online untuk mapel ini. Pertanyaanmu otomatis ditawarkan begitu ada tentor yang tersedia.';
+  }
+  const declined = info.declinedCount > 0 ? ` ${info.declinedCount} di antaranya menolak.` : '';
+  return `Sudah ditawarkan ke ${info.offeredCount} tentor dan belum ada yang menerima.${declined} Tawaran diperbarui tiap jam.`;
 }
 
 export default function ChatPage() {
@@ -38,9 +56,12 @@ export default function ChatPage() {
   const [reviewText, setReviewText] = useState('');
   const [ratingError, setRatingError] = useState<string | null>(null);
   const [ratingSubmitting, setRatingSubmitting] = useState(false);
+  const [waitInfo, setWaitInfo] = useState<WaitInfo | null>(null);
+  const [acceptedNotice, setAcceptedNotice] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const prevStatusRef = useRef<string | null>(null);
 
   const loadMessages = useCallback(async () => {
     const supabase = createClient();
@@ -52,16 +73,26 @@ export default function ChatPage() {
     setMessages((data as MessageRow[]) ?? []);
   }, [questionId]);
 
-  useEffect(() => {
+  const loadQuestion = useCallback(async () => {
     const supabase = createClient();
-
-    supabase
+    const { data } = await supabase
       .from('questions')
       .select('id, title, content, photo_url, status, rating_given, mentee_id, accepted_tentor_id, subjects(name)')
       .eq('id', questionId)
-      .maybeSingle()
-      .then(({ data }) => setQuestion(data as unknown as QuestionDetail));
+      .maybeSingle();
+    if (data) setQuestion(data as unknown as QuestionDetail);
+  }, [questionId]);
 
+  const loadWaitInfo = useCallback(async () => {
+    const res = await fetch(`/api/questions/${questionId}/status`);
+    if (res.ok) setWaitInfo((await res.json()) as WaitInfo);
+  }, [questionId]);
+
+  // Data awal + langganan realtime: pesan baru DAN perubahan status sesi
+  // (supaya begitu tentor menerima, kolom ketik langsung aktif tanpa keluar-masuk).
+  useEffect(() => {
+    const supabase = createClient();
+    loadQuestion();
     loadMessages();
 
     const channel = supabase
@@ -71,12 +102,45 @@ export default function ChatPage() {
         { event: 'INSERT', schema: 'public', table: 'messages', filter: `question_id=eq.${questionId}` },
         (payload) => setMessages((prev) => [...prev, payload.new as MessageRow])
       )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'questions', filter: `id=eq.${questionId}` },
+        () => {
+          loadQuestion();
+          loadWaitInfo();
+        }
+      )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [questionId, loadMessages]);
+  }, [questionId, loadQuestion, loadMessages, loadWaitInfo]);
+
+  // Cadangan kalau sinyal realtime terlambat: selama masih menunggu, cek status tiap 5 detik
+  const status = question?.status;
+  useEffect(() => {
+    if (status !== 'menunggu') return;
+    loadWaitInfo();
+    const timer = setInterval(() => {
+      loadQuestion();
+      loadWaitInfo();
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [status, loadQuestion, loadWaitInfo]);
+
+  // Kabar singkat saat status berubah dari "menunggu" menjadi "berjalan"
+  useEffect(() => {
+    if (!question) return;
+    if (prevStatusRef.current === 'menunggu' && question.status === 'berjalan') {
+      setAcceptedNotice('Pertanyaanmu diterima! Silakan mulai ngobrol.');
+      loadMessages();
+      const t = setTimeout(() => setAcceptedNotice(null), 6000);
+      prevStatusRef.current = question.status;
+      return () => clearTimeout(t);
+    }
+    prevStatusRef.current = question.status;
+  }, [question, loadMessages]);
 
   useEffect(() => {
     if (!question || !profile) return;
@@ -93,7 +157,21 @@ export default function ChatPage() {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, question?.status]);
+
+  // Tinggi layar yang sebenarnya terlihat (di HP: tanpa toolbar browser dan keyboard),
+  // supaya kolom ketik tidak tertutup.
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => document.documentElement.style.setProperty('--vvh', `${vv.height}px`);
+    update();
+    vv.addEventListener('resize', update);
+    return () => {
+      vv.removeEventListener('resize', update);
+      document.documentElement.style.removeProperty('--vvh');
+    };
+  }, []);
 
   async function sendText() {
     if (!text.trim() || !profile) return;
@@ -161,14 +239,24 @@ export default function ChatPage() {
   }
 
   if (!question || !profile) {
-    return <main className="flex h-screen items-center justify-center text-ink-400">Memuat…</main>;
+    return <main className="flex h-dvh items-center justify-center text-ink-400">Memuat…</main>;
   }
 
   const isActive = question.status === 'berjalan';
+  const isWaiting = question.status === 'menunggu';
+  const isExpired = question.status === 'hangus';
   const isMentee = profile.role === 'mentee';
+  const expiresText = waitInfo?.expiresAt
+    ? new Date(waitInfo.expiresAt).toLocaleString('id-ID', {
+        day: 'numeric',
+        month: 'long',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : null;
 
   return (
-    <div className="flex h-screen flex-col bg-ink-50">
+    <div className="flex flex-col bg-ink-50" style={{ height: 'var(--vvh, 100dvh)' }}>
       <header className="flex items-center justify-between border-b border-ink-100 bg-white px-4 py-3">
         <div className="flex items-center gap-3">
           <Link href="/dashboard" className="rounded-full p-1.5 hover:bg-ink-100">
@@ -178,7 +266,7 @@ export default function ChatPage() {
             {partnerName && partnerName !== '—' ? (
               <UserLink username={partnerName} withAt={false} />
             ) : (
-              <p className="font-medium text-ink-900">{partnerName}</p>
+              <p className="font-medium text-ink-900">{isWaiting ? 'Mencari tentor…' : partnerName}</p>
             )}
             <p className="text-xs text-ink-500">{question.subjects?.name}</p>
           </div>
@@ -195,6 +283,12 @@ export default function ChatPage() {
         )}
       </header>
 
+      {acceptedNotice && (
+        <div className="flex items-center gap-2 bg-brand-50 px-4 py-2 text-sm font-medium text-brand-700">
+          <PartyPopper size={16} /> {acceptedNotice}
+        </div>
+      )}
+
       <div className="flex-1 overflow-y-auto px-4 py-4">
         <div className="mx-auto max-w-2xl space-y-3">
           <div className="card border-brand-100 bg-brand-50/40">
@@ -202,6 +296,7 @@ export default function ChatPage() {
             {question.title && <p className="mt-1 font-semibold text-ink-900">{question.title}</p>}
             <p className="mt-1 text-ink-800">{question.content}</p>
             {question.photo_url && (
+              // eslint-disable-next-line @next/next/no-img-element
               <img src={question.photo_url} alt="Foto soal" className="mt-2 max-h-64 rounded-2xl object-cover" />
             )}
           </div>
@@ -217,6 +312,7 @@ export default function ChatPage() {
                 >
                   {m.type === 'teks' && <p className="whitespace-pre-wrap">{m.content}</p>}
                   {m.type === 'foto' && (
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img src={m.content} alt="Foto" className="max-h-56 rounded-xl object-cover" />
                   )}
                   {m.type === 'suara' && <audio controls src={m.content} className="max-w-[220px]" />}
@@ -231,8 +327,8 @@ export default function ChatPage() {
         </div>
       </div>
 
-      {isActive ? (
-        <div className="border-t border-ink-100 bg-white px-4 py-3">
+      {isActive && (
+        <div className="border-t border-ink-100 bg-white px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <div className="mx-auto flex max-w-2xl items-center gap-2">
             <label className="cursor-pointer rounded-full p-2.5 text-ink-500 hover:bg-ink-100">
               <Camera size={20} />
@@ -258,6 +354,7 @@ export default function ChatPage() {
               value={text}
               onChange={(e) => setText(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && sendText()}
+              enterKeyHint="send"
               placeholder="Tulis pesan…"
               className="input-field flex-1"
             />
@@ -266,15 +363,52 @@ export default function ChatPage() {
             </button>
           </div>
         </div>
-      ) : (
-        <div className="border-t border-ink-100 bg-ink-100 px-4 py-3 text-center text-sm text-ink-500">
+      )}
+
+      {isWaiting && (
+        <div className="border-t border-accent-100 bg-accent-50 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <div className="mx-auto flex max-w-2xl items-start gap-3 text-sm text-accent-700">
+            <Hourglass size={18} className="mt-0.5 shrink-0" />
+            <div>
+              {isMentee ? (
+                <>
+                  <p className="font-medium">Menunggu tentor menerima pertanyaanmu</p>
+                  <p className="mt-0.5">{waitMessage(waitInfo)}</p>
+                  {expiresText && <p className="mt-0.5 text-accent-600">Kami terus mencari sampai {expiresText}.</p>}
+                </>
+              ) : (
+                <p className="font-medium">Sesi ini belum kamu terima.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isExpired && (
+        <div className="border-t border-red-100 bg-red-50 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-sm text-red-700">
+          <div className="mx-auto max-w-2xl">
+            <p className="font-medium">Belum ada tentor yang menerima pertanyaanmu.</p>
+            <p className="mt-0.5">
+              Tentor belum bisa menjawab kali ini. Coba kirim lagi atau tanyakan hal lain.{' '}
+              {isMentee && (
+                <Link href="/pertanyaan/ajukan" className="font-semibold underline">
+                  Ajukan lagi
+                </Link>
+              )}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {question.status === 'selesai' && (
+        <div className="border-t border-ink-100 bg-ink-100 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-center text-sm text-ink-500">
           Sesi ini sudah berakhir.
         </div>
       )}
 
       {ratingOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-sm rounded-3xl bg-white p-6">
+          <div className="max-h-full w-full max-w-sm overflow-y-auto rounded-3xl bg-white p-6">
             <h2 className="text-lg font-semibold text-ink-900">Kasih bintang buat {partnerName}</h2>
             <p className="mt-1 text-sm text-ink-600">Bintang wajib diisi. Ulasan boleh dikosongkan.</p>
             <div className="mt-4 flex justify-center gap-1">

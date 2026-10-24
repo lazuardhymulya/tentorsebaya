@@ -39,11 +39,15 @@ async function handleGet(request: Request) {
     .lt('accepted_at', new Date(now - SESSION_AUTO_CLOSE_MS).toISOString());
 
   for (const s of staleSessions ?? []) {
-    await admin
+    const closeValues = { status: 'selesai', ended_at: new Date().toISOString(), auto_closed: true };
+    const closed = await admin
       .from('questions')
-      .update({ status: 'selesai', ended_at: new Date().toISOString(), auto_closed: true })
+      .update({ ...closeValues, gift_pending: true })
       .eq('id', s.id)
       .eq('status', 'berjalan');
+    if (closed.error && /gift_pending/i.test(closed.error.message)) {
+      await admin.from('questions').update(closeValues).eq('id', s.id).eq('status', 'berjalan');
+    }
     result.autoClosed++;
   }
 
