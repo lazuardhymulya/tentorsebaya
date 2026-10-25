@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { Bell, GraduationCap, LogOut, Menu, Search, X } from 'lucide-react';
+import { Bell, GraduationCap, House, LogOut, Menu, Search, X } from 'lucide-react';
 import { useSessionProfile } from '@/lib/useSessionProfile';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -33,14 +33,25 @@ export function Navbar() {
           .select('id', { count: 'exact', head: true })
           .eq('tentor_id', profile.id)
           .eq('status', 'menunggu');
-        setNotifCount(count ?? 0);
+        const { count: postCount } = await supabase
+          .from('session_posts')
+          .select('id', { count: 'exact', head: true })
+          .eq('tentor_id', profile.id)
+          .eq('status', 'menunggu_tentor');
+        setNotifCount((count ?? 0) + (postCount ?? 0));
       } else {
         const { count } = await supabase
           .from('questions')
           .select('id', { count: 'exact', head: true })
           .eq('mentee_id', profile.id)
           .in('status', ['menunggu', 'berjalan']);
-        setNotifCount(count ?? 0);
+        const { count: postCount } = await supabase
+          .from('session_posts')
+          .select('id', { count: 'exact', head: true })
+          .eq('mentee_id', profile.id)
+          .eq('status', 'tayang')
+          .eq('mentee_seen', false);
+        setNotifCount((count ?? 0) + (postCount ?? 0));
       }
     }
 
@@ -52,6 +63,7 @@ export function Navbar() {
         { event: '*', schema: 'public', table: profile.role === 'tentor' ? 'question_assignments' : 'questions' },
         () => loadCount()
       )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'session_posts' }, () => loadCount())
       .subscribe();
 
     return () => {
@@ -93,6 +105,15 @@ export function Navbar() {
           </span>
         </Link>
 
+        {profile && (
+          <Link
+            href="/beranda"
+            className="hidden shrink-0 items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium text-ink-600 hover:bg-ink-100 md:flex"
+          >
+            <House size={16} /> Beranda
+          </Link>
+        )}
+
         {askHref && (
           <button
             onClick={() => router.push(askHref)}
@@ -110,7 +131,7 @@ export function Navbar() {
           </nav>
         )}
 
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="ml-auto flex shrink-0 items-center gap-2">
           {!loading && !profile && (
             <>
               <Link href="/masuk" className="btn-ghost hidden sm:inline-flex">Masuk</Link>
@@ -194,6 +215,13 @@ export function Navbar() {
           >
             <Avatar username={profile.username} photoUrl={profile.photo_url} size="sm" />
             {profile.username}
+          </Link>
+          <Link
+            href="/beranda"
+            onClick={() => setMenuOpen(false)}
+            className="mb-2 flex items-center gap-2 rounded-2xl px-1 py-2 text-sm font-medium text-ink-700"
+          >
+            <House size={16} /> Beranda
           </Link>
           {profile.role === 'mentee' && (
             <Link href="/pertanyaan/ajukan" className="btn-primary mb-2 w-full">

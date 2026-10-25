@@ -7,6 +7,9 @@ const schema = z.object({
   rating: z.number().min(0.1).max(5.0),
   // Ulasan teks opsional; bintang tetap wajib
   review: z.string().trim().max(500, 'Ulasan maksimal 500 karakter.').optional(),
+  // Persetujuan mentee agar sesi ini boleh dipublikasikan ke forum (tentor yang menyusunnya)
+  publish: z.boolean().optional(),
+  anonymous: z.boolean().optional(),
 });
 
 export async function POST(request: Request, ctx: { params: Promise<{ id: string }> }) {
@@ -80,5 +83,17 @@ async function handlePost(request: Request, { params }: { params: Promise<{ id: 
     reviewSaved = !reviewErr;
   }
 
-  return NextResponse.json({ question: data, reviewSaved });
+  // Mentee setuju sesi dipublikasikan -> buat permintaan menyusun untuk tentor (berlaku 7 hari)
+  let publishRequested = false;
+  if (parsed.data.publish && data.accepted_tentor_id) {
+    const { error: postErr } = await admin.from('session_posts').insert({
+      question_id: questionId,
+      mentee_id: session.profile.id,
+      tentor_id: data.accepted_tentor_id,
+      anonymous: parsed.data.anonymous ?? false,
+    });
+    publishRequested = !postErr;
+  }
+
+  return NextResponse.json({ question: data, reviewSaved, publishRequested });
 }

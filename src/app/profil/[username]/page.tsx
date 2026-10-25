@@ -5,6 +5,9 @@ import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { Avatar } from '@/components/Avatar';
 import { ProfileTabs } from '@/components/ProfileTabs';
+import { PostCard } from '@/components/PostCard';
+import { loadPostCards } from '@/lib/forum';
+import type { PostCardData } from '@/lib/types';
 import { UserLink } from '@/components/UserLink';
 import { getSessionProfile } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -91,6 +94,17 @@ export default async function ProfilPage({ params }: { params: { username: strin
       .order('created_at', { ascending: false })
       .limit(30);
     reviews = (reviewRows ?? []) as unknown as ReviewRow[];
+  }
+
+  // Riwayat = hanya sesi yang sudah dipublikasikan. Postingan anonim tidak masuk riwayat mentee.
+  let historyCards: PostCardData[] = [];
+  if (isTentor || fullView) {
+    const history = await loadPostCards(admin, {
+      ...(isTentor ? { tentorId: profile.id } : { menteeId: profile.id, excludeAnonymous: true }),
+      offset: 0,
+      limit: 10,
+    });
+    historyCards = history.cards;
   }
 
   const joined = new Date(profile.created_at).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
@@ -227,7 +241,15 @@ export default async function ProfilPage({ params }: { params: { username: strin
                 history={
                   <>
                     <h2 className="text-lg font-semibold text-ink-900">Riwayat jawaban</h2>
-                    <p className="mt-2 text-ink-400">Belum ada sesi yang dipublikasikan.</p>
+                    {historyCards.length === 0 ? (
+                      <p className="mt-2 text-ink-400">Belum ada sesi yang dipublikasikan.</p>
+                    ) : (
+                      <div className="mt-3 space-y-3">
+                        {historyCards.map((post) => (
+                          <PostCard key={post.id} post={post} />
+                        ))}
+                      </div>
+                    )}
                   </>
                 }
                 reviews={
@@ -268,7 +290,15 @@ export default async function ProfilPage({ params }: { params: { username: strin
             ) : (
               <section className="card mt-4">
                 <h2 className="text-lg font-semibold text-ink-900">Riwayat pertanyaan</h2>
-                <p className="mt-2 text-ink-400">Belum ada sesi yang dipublikasikan.</p>
+                {historyCards.length === 0 ? (
+                  <p className="mt-2 text-ink-400">Belum ada sesi yang dipublikasikan.</p>
+                ) : (
+                  <div className="mt-3 space-y-3">
+                    {historyCards.map((post) => (
+                      <PostCard key={post.id} post={post} />
+                    ))}
+                  </div>
+                )}
               </section>
             )}
           </>

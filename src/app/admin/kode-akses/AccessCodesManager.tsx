@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Copy, Plus, ShieldCheck } from 'lucide-react';
 
@@ -46,7 +47,11 @@ export function AccessCodesManager() {
         <ShieldCheck size={20} className="text-brand-600" />
         <h1 className="text-2xl font-semibold text-ink-900">Kode Akses Tentor</h1>
       </div>
-      <p className="mt-1 text-ink-600">Kode ini hanya dipakai sekali oleh tiap tentor saat pendaftaran pertama.</p>
+      <nav className="mt-2 flex gap-4 text-sm">
+        <span className="font-medium text-brand-700">Kode akses</span>
+        <Link href="/admin/laporan" className="text-ink-500 hover:text-brand-600">Laporan</Link>
+      </nav>
+      <p className="mt-3 text-ink-600">Kode ini hanya dipakai sekali oleh tiap tentor saat pendaftaran pertama.</p>
 
       <div className="card mt-6">
         <p className="mb-3 text-sm font-medium text-ink-700">Buat kode baru</p>

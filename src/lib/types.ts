@@ -70,3 +70,16 @@ export interface MessageRow {
   content: string;
   created_at: string;
 }
+
+export type PostStatus = 'menunggu_tentor' | 'tayang' | 'ditarik' | 'kedaluwarsa';
+
+export interface PostCardData {
+  id: string;
+  title: string;
+  subject: string | null;
+  tags: string[];
+  tentorUsername: string | null;
+  menteeUsername: string | null; // null kalau anonim
+  anonymous: boolean;
+  publishedAt: string | null;
+}

@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Check, X, Clock, ImageIcon } from 'lucide-react';
+import Link from 'next/link';
+import { Check, X, Clock, ImageIcon, MessagesSquare } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { useSessionProfile } from '@/lib/useSessionProfile';
@@ -19,6 +20,14 @@ interface AssignmentItem {
     photo_url: string | null;
     subjects: { name: string } | null;
   } | null;
+}
+
+interface PostNotifItem {
+  id: string;
+  status: string;
+  mentee_seen: boolean;
+  expires_at: string;
+  question: { title: string | null; subjects: { name: string } | null } | null;
 }
 
 interface MenteeQuestionItem {
@@ -55,6 +64,7 @@ export default function NotifikasiPage() {
   const router = useRouter();
   const [assignments, setAssignments] = useState<AssignmentItem[]>([]);
   const [menteeQuestions, setMenteeQuestions] = useState<MenteeQuestionItem[]>([]);
+  const [postItems, setPostItems] = useState<PostNotifItem[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -67,6 +77,21 @@ export default function NotifikasiPage() {
       .eq('status', 'menunggu')
       .order('sent_at', { ascending: false });
     setAssignments((data as unknown as AssignmentItem[]) ?? []);
+  }, []);
+
+  const loadPostItems = useCallback(async (userId: string, role: 'tentor' | 'mentee') => {
+    const supabase = createClient();
+    const base = supabase
+      .from('session_posts')
+      .select('id, status, mentee_seen, expires_at, question:questions(title, subjects(name))');
+    const filtered =
+      role === 'tentor'
+        ? base.eq('tentor_id', userId).eq('status', 'menunggu_tentor')
+        : base
+            .eq('mentee_id', userId)
+            .or('status.eq.menunggu_tentor,and(status.eq.tayang,mentee_seen.eq.false)');
+    const { data } = await filtered.order('requested_at', { ascending: false });
+    setPostItems((data as unknown as PostNotifItem[]) ?? []);
   }, []);
 
   const loadMenteeQuestions = useCallback(async (menteeId: string) => {
@@ -86,8 +111,14 @@ export default function NotifikasiPage() {
 
     if (profile.role === 'tentor') {
       loadTentorAssignments(profile.id);
+      loadPostItems(profile.id, 'tentor');
       const channel = supabase
         .channel('notif-tentor')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'session_posts', filter: `tentor_id=eq.${profile.id}` },
+          () => loadPostItems(profile.id, 'tentor')
+        )
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'question_assignments', filter: `tentor_id=eq.${profile.id}` },
@@ -99,8 +130,14 @@ export default function NotifikasiPage() {
       };
     } else {
       loadMenteeQuestions(profile.id);
+      loadPostItems(profile.id, 'mentee');
       const channel = supabase
         .channel('notif-mentee')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'session_posts', filter: `mentee_id=eq.${profile.id}` },
+          () => loadPostItems(profile.id, 'mentee')
+        )
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'questions', filter: `mentee_id=eq.${profile.id}` },
@@ -111,7 +148,7 @@ export default function NotifikasiPage() {
         supabase.removeChannel(channel);
       };
     }
-  }, [profile, loadTentorAssignments, loadMenteeQuestions]);
+  }, [profile, loadTentorAssignments, loadMenteeQuestions, loadPostItems]);
 
   async function respond(questionId: string, action: 'accept' | 'reject') {
     setBusyId(questionId);
@@ -149,6 +186,46 @@ export default function NotifikasiPage() {
         <h1 className="text-2xl font-semibold text-ink-900">Notifikasi</h1>
 
         {notice && <div className="mt-4 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600">{notice}</div>}
+
+        {postItems.length > 0 && (
+          <section className="mt-6 space-y-3">
+            <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-ink-400">
+              <MessagesSquare size={14} /> Forum diskusi
+            </h2>
+            {postItems.map((p) => {
+              const title = p.question?.title || 'Pertanyaan tanpa judul';
+              if (profile.role === 'tentor') {
+                return (
+                  <div key={p.id} className="card border-brand-200 bg-brand-50/40">
+                    <p className="text-sm font-medium text-brand-700">Menyusun postingan forum</p>
+                    <p className="mt-1 font-semibold text-ink-900">{title}</p>
+                    <p className="mt-1 text-sm text-ink-600">
+                      Mentee mengizinkan sesi ini dipublikasikan. Pilih bagian chat yang tampil dan tulis penjelasan tambahan sebelum{' '}
+                      {new Date(p.expires_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long' })}.
+                    </p>
+                    <Link href={`/forum/${p.id}/susun`} className="btn-primary mt-3">Susun sekarang</Link>
+                  </div>
+                );
+              }
+              if (p.status === 'tayang') {
+                return (
+                  <Link key={p.id} href={`/forum/${p.id}`} className="card block border-brand-200 bg-brand-50/40 transition hover:border-brand-400">
+                    <p className="text-sm font-medium text-brand-700">Sesimu sudah tayang di forum</p>
+                    <p className="mt-1 font-semibold text-ink-900">{title}</p>
+                    <p className="mt-1 text-sm text-ink-600">Tentor sudah menyusunnya. Buka untuk melihat dan ikut berdiskusi.</p>
+                  </Link>
+                );
+              }
+              return (
+                <div key={p.id} className="card">
+                  <p className="text-sm font-medium text-accent-700">Menunggu tentor menyusun postingan</p>
+                  <p className="mt-1 font-semibold text-ink-900">{title}</p>
+                  <p className="mt-1 text-sm text-ink-500">Kamu akan dapat notifikasi di sini begitu sudah tayang.</p>
+                </div>
+              );
+            })}
+          </section>
+        )}
 
         {profile.role === 'tentor' ? (
           <div className="mt-6 space-y-4">

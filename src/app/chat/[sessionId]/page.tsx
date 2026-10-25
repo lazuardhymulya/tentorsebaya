@@ -54,6 +54,8 @@ export default function ChatPage() {
   const [ratingOpen, setRatingOpen] = useState(false);
   const [ratingValue, setRatingValue] = useState(5);
   const [reviewText, setReviewText] = useState('');
+  const [publishConsent, setPublishConsent] = useState(false);
+  const [publishAnonymous, setPublishAnonymous] = useState(false);
   const [ratingError, setRatingError] = useState<string | null>(null);
   const [ratingSubmitting, setRatingSubmitting] = useState(false);
   const [waitInfo, setWaitInfo] = useState<WaitInfo | null>(null);
@@ -226,7 +228,12 @@ export default function ChatPage() {
     const res = await fetch(`/api/sessions/${questionId}/end`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ rating: ratingValue, review: reviewText.trim() || undefined }),
+      body: JSON.stringify({
+        rating: ratingValue,
+        review: reviewText.trim() || undefined,
+        publish: publishConsent,
+        anonymous: publishConsent && publishAnonymous,
+      }),
     });
     setRatingSubmitting(false);
     if (res.ok) {
@@ -428,6 +435,28 @@ export default function ChatPage() {
               onChange={(e) => setReviewText(e.target.value)}
               placeholder="Tulis ulasan untuk tentor (opsional). Ulasan tampil di profilnya."
             />
+            <div className="mt-4 rounded-2xl border border-ink-100 p-3">
+              <label className="flex cursor-pointer items-start gap-3">
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={publishConsent}
+                  onChange={(e) => setPublishConsent(e.target.checked)}
+                />
+                <span className="text-sm">
+                  <span className="block font-medium text-ink-900">Izinkan sesi ini dipublikasikan di forum</span>
+                  <span className="block text-ink-500">
+                    Chat tidak tayang otomatis. Tentor memilih pesan yang ditampilkan dan menambah penjelasan, isi pesan tidak diubah, dan voice note tidak pernah tampil. Kamu dapat notifikasi saat sudah tayang dan bisa menariknya kapan saja.
+                  </span>
+                </span>
+              </label>
+              {publishConsent && (
+                <label className="mt-3 flex cursor-pointer items-center gap-3 border-t border-ink-100 pt-3 text-sm text-ink-700">
+                  <input type="checkbox" checked={publishAnonymous} onChange={(e) => setPublishAnonymous(e.target.checked)} />
+                  Tampilkan sebagai anonim (username-mu tidak muncul)
+                </label>
+              )}
+            </div>
             {ratingError && <p className="mt-2 text-sm text-red-600">{ratingError}</p>}
             <div className="mt-4 flex gap-2">
               <button onClick={() => setRatingOpen(false)} className="btn-secondary flex-1">Batal</button>

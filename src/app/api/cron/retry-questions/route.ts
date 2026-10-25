@@ -51,6 +51,13 @@ async function handleGet(request: Request) {
     result.autoClosed++;
   }
 
+  // 1b) Permintaan menyusun postingan forum yang tidak ditanggapi tentor dalam 7 hari -> sesi tetap privat
+  await admin
+    .from('session_posts')
+    .update({ status: 'kedaluwarsa' })
+    .eq('status', 'menunggu_tentor')
+    .lt('expires_at', new Date(now).toISOString());
+
   // 2) Pertanyaan yang masih menunggu tentor
   const { data: pending } = await admin
     .from('questions')
