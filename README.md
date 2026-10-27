@@ -27,7 +27,7 @@ Semua bagian di bawah punya tier gratis yang cukup untuk pemakaian ±1 bulan.
 4. Ulangi persis sama untuk `supabase/migrations/0002_storage.sql`.
 5. Ulangi persis sama untuk `supabase/migrations/0003_cron_extensions.sql`.
 
-   Urutannya harus 0001 → 0002 → 0003 karena saling bergantung. Setelah itu jalankan juga `0004_realtime.sql` (update otomatis tanpa refresh) `0005_profil_ulasan.sql` (profil, ulasan teks, judul pertanyaan, foto profil), `0006_hadiah_tentor.sql` (kado untuk tentor), dan `0007_forum.sql` (forum diskusi, komentar, laporan) dengan cara yang sama.
+   Urutannya harus 0001 → 0002 → 0003 karena saling bergantung. Setelah itu jalankan juga `0004_realtime.sql` (update otomatis tanpa refresh) `0005_profil_ulasan.sql` (profil, ulasan teks, judul pertanyaan, foto profil), `0006_hadiah_tentor.sql` (kado untuk tentor), `0007_forum.sql` (forum diskusi, komentar, laporan), dan `0008_pencarian_leaderboard.sql` (pencarian dan leaderboard) dengan cara yang sama.
 
 6. Ambil kredensial API: buka **Project Settings** (ikon gear) → **API**.
    Kamu akan butuh 3 nilai ini nanti:

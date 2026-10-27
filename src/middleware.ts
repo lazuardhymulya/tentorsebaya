@@ -5,7 +5,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 // spesifik tetap dilakukan lagi di masing-masing halaman/API route — ini
 // cuma lapisan pertama supaya orang yang belum login tidak bisa membuka
 // halaman dalam sama sekali.
-const PROTECTED_PREFIXES = ['/dashboard', '/pertanyaan', '/notifikasi', '/chat', '/profil', '/pengaturan', '/beranda', '/forum'];
+const PROTECTED_PREFIXES = ['/dashboard', '/pertanyaan', '/notifikasi', '/chat', '/profil', '/pengaturan', '/beranda', '/forum', '/cari', '/leaderboard'];
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });

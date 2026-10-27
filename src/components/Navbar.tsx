@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { Bell, GraduationCap, House, LogOut, Menu, Search, X } from 'lucide-react';
+import { Bell, GraduationCap, House, LogOut, Menu, MessageCircleQuestion, Search, Trophy, X } from 'lucide-react';
 import { useSessionProfile } from '@/lib/useSessionProfile';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -106,12 +106,24 @@ export function Navbar() {
         </Link>
 
         {profile && (
-          <Link
-            href="/beranda"
-            className="hidden shrink-0 items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium text-ink-600 hover:bg-ink-100 md:flex"
-          >
-            <House size={16} /> Beranda
-          </Link>
+          <nav className="hidden shrink-0 items-center md:flex" aria-label="Menu utama">
+            {[
+              { href: '/beranda', label: 'Beranda', Icon: House },
+              { href: '/cari', label: 'Cari', Icon: Search },
+              { href: '/leaderboard', label: 'Leaderboard', Icon: Trophy },
+            ].map(({ href, label, Icon }) => (
+              <Link
+                key={href}
+                href={href}
+                title={label}
+                aria-label={label}
+                className="flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium text-ink-600 hover:bg-ink-100"
+              >
+                <Icon size={16} />
+                <span className="hidden lg:inline">{label}</span>
+              </Link>
+            ))}
+          </nav>
         )}
 
         {askHref && (
@@ -119,7 +131,7 @@ export function Navbar() {
             onClick={() => router.push(askHref)}
             className="group flex min-w-0 flex-1 items-center gap-2 rounded-full border border-ink-200 bg-ink-50 px-4 py-2.5 text-left text-sm text-ink-500 transition hover:border-brand-300 hover:bg-white"
           >
-            <Search size={16} className="shrink-0 text-ink-400 group-hover:text-brand-500" />
+            <MessageCircleQuestion size={16} className="shrink-0 text-ink-400 group-hover:text-brand-500" />
             <span className="truncate">Tanya apa aja soal pelajaran, gratis…</span>
           </button>
         )}
@@ -216,13 +228,20 @@ export function Navbar() {
             <Avatar username={profile.username} photoUrl={profile.photo_url} size="sm" />
             {profile.username}
           </Link>
-          <Link
-            href="/beranda"
-            onClick={() => setMenuOpen(false)}
-            className="mb-2 flex items-center gap-2 rounded-2xl px-1 py-2 text-sm font-medium text-ink-700"
-          >
-            <House size={16} /> Beranda
-          </Link>
+          {[
+            { href: '/beranda', label: 'Beranda', Icon: House },
+            { href: '/cari', label: 'Cari', Icon: Search },
+            { href: '/leaderboard', label: 'Leaderboard', Icon: Trophy },
+          ].map(({ href, label, Icon }) => (
+            <Link
+              key={href}
+              href={href}
+              onClick={() => setMenuOpen(false)}
+              className="mb-1 flex items-center gap-2 rounded-2xl px-1 py-2 text-sm font-medium text-ink-700"
+            >
+              <Icon size={16} /> {label}
+            </Link>
+          ))}
           {profile.role === 'mentee' && (
             <Link href="/pertanyaan/ajukan" className="btn-primary mb-2 w-full">
               Ajukan Pertanyaan
